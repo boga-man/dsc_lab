@@ -1,0 +1,23 @@
+# LDA transform function
+def ldaTransform(no_comp, X_train, Y_train):
+    m, n = X_train.shape
+    uniq_classes = np.unique(Y_train)
+
+    # calculating the scatter_t of the X_train
+    sc_t = np.cov(X_train.T)*(m-1)
+
+    # separating the rows according to the class
+    # calculating the scatter_w of each class in X_train
+    sc_w = 0
+    for i in range(len(uniq_classes)):
+        items = np.flatnonzero(Y_train==uniq_classes[i])
+        sc_w += np.cov(X_train[items].T)*(len(items)-1)
+    
+    # Get the eigen values & vectors for scatter matrices
+    sc_b = sc_t - sc_w
+    eigVal, eigVect = np.linalg.eigh(np.linalg.pinv(sc_w).dot(sc_b))
+    
+    # Transforming the X_train (transforming all the features)
+    X_train_transformed = X_train.dot(eigVect[:,::-1][:,:no_comp])
+
+    return X_train_transformed

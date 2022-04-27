@@ -1,0 +1,119 @@
+# Importing the required libraries
+#importing libraries and functions
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.datasets import load_boston
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+
+
+def ReLU(z):
+    # ReLU, on input x, returns 0 if x is non positive, and x itself if x is positive
+    a = np.maximum(0, z)
+    return a
+
+
+
+def initParams(layer_sizes):
+    # Create a dictionary that will store parameters associated with its names (like w1, b1, etc.)
+    params = {}
+
+    # Creating the parameters for each layer
+    for i in range(1, len(layer_sizes)):
+        params['W' + str(i)] = np.random.randn(layer_sizes[i], layer_sizes[i-1])*0.01
+        params['B' + str(i)] = np.random.randn(layer_sizes[i],1)*0.01
+    return params
+
+
+def frwdProp(X_train, parameters):
+    layers = len(parameters)//2
+    vals = {}
+    # Calculating the activations layer by layer
+    for i in range(1, layers+1):
+        # First hidden layer
+        if i==1:
+            vals['Z' + str(i)] = np.dot(parameters['W' + str(i)], X_train) + parameters['B' + str(i)]
+            vals['A' + str(i)] = ReLU(vals['Z' + str(i)])
+        else:
+            vals['Z' + str(i)] = np.dot(parameters['W' + str(i)], vals['A' + str(i-1)]) + parameters['B' + str(i)]
+            if i==layers:
+                vals['A' + str(i)] = vals['Z' + str(i)]
+            else:
+                vals['A' + str(i)] = ReLU(vals['Z' + str(i)])
+    return vals
+
+
+
+def getCost(vals, Y_train):
+    layers = len(vals)//2
+    Y_pred = vals['A' + str(layers)]
+    cost = 1/(2*len(Y_train)) * np.sum(np.square(Y_pred - Y_train))
+    return cost
+
+
+
+def backProp(parameters, vals, X_train, Y_train):
+    layers = len(parameters)//2
+    m = len(Y_train)
+    grads = {}
+    for i in range(layers,0,-1):
+        # Calculating the gradients for the last layer
+        if i==layers:
+            dA = 1/m * (vals['A' + str(i)] - Y_train)
+            dZ = dA
+        # Calculating the gradients for the hidden layers
+        else:
+            dA = np.dot(parameters['W' + str(i+1)].T, dZ)
+            dZ = np.multiply(dA, np.where(vals['A' + str(i)]>=0, 1, 0))
+        # Calculating the gradients for the parameters
+        if i==1:
+            grads['W' + str(i)] = 1/m * np.dot(dZ, X_train.T)
+            grads['B' + str(i)] = 1/m * np.sum(dZ, axis=1, keepdims=True)
+        else:
+            grads['W' + str(i)] = 1/m * np.dot(dZ,vals['A' + str(i-1)].T)
+            grads['B' + str(i)] = 1/m * np.sum(dZ, axis=1, keepdims=True)
+    return grads
+
+
+
+def updParams(params, gradients, alpha):
+    layers = len(params)//2
+    params_updated = {}
+    # Updating the parameters in layer by layer
+    for i in range(1,layers+1):
+        params_updated['W' + str(i)] = params['W' + str(i)] - alpha * gradients['W' + str(i)]
+        params_updated['B' + str(i)] = params['B' + str(i)] - alpha * gradients['B' + str(i)]
+    return params_updated
+
+
+
+def model(X_train, Y_train, layer_sizes, num_iters, learning_rate):
+    params = initParams(layer_sizes)
+    for i in range(num_iters):
+        values = frwdProp(X_train.T, params)
+        cost = getCost(values, Y_train.T)
+        grads = backProp(params, values,X_train.T, Y_train.T)
+        params = updParams(params, grads, learning_rate)
+        print('Cost at iteration ' + str(i+1) + ' = ' + str(cost) + '\n')
+    return params
+
+
+
+def compute_accuracy(X_train, X_test, Y_train, Y_test, params):
+    # Calculating the predictions
+    trainVals = frwdProp(X_train.T, params)
+    testVals = frwdProp(X_test.T, params)
+    # Calculating the accuracy of the model
+    trainAcc = np.sqrt(mean_squared_error(Y_train, trainVals['A' + str(len(layer_sizes)-1)].T))
+    testAcc = np.sqrt(mean_squared_error(Y_test, testVals['A' + str(len(layer_sizes)-1)].T))
+    return trainAcc, testAcc
+
+
+
+def predict(X, params):
+    # Making predictions using forward propagation
+    vals = frwdProp(X.T, params)
+    preds = vals['A' + str(len(vals)//2)].T
+    return preds

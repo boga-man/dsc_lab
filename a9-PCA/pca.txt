@@ -1,0 +1,23 @@
+# Calculating the covariance matrix using numpy
+X = X-X.mean()
+covX = np.cov(X , rowvar = False)
+
+print("Covariance matrix of the features")
+print(covX)
+
+# Calculate the Eigen values and vectors using numpy
+eigen_values , eigen_vectors = np.linalg.eigh(covX)
+
+print("Eigen values: ", eigen_values)
+print("Eigen vectors: ", eigen_vectors)
+
+# Sorting the eigen vectors
+# first we get the descending sorted state of eigen values indices
+sortedIndex = np.argsort(eigen_values)[::-1]
+
+# then we sort the eigen values and vectors according to indices
+sortedValues = eigen_values[sortedIndex]
+sortedVectors = eigen_vectors[:,sortedIndex]
+
+print("Sorted Eigen values: ", sortedValues)
+print("Sorted Eigen vectors: ", sortedVectors)
